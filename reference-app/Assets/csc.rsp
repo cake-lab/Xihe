@@ -1,0 +1,2 @@
+-unsafe
+-r:System.IO.Compression.dll

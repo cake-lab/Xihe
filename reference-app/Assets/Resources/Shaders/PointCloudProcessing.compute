@@ -1,0 +1,284 @@
+﻿// MACROS
+#define THREADS 1024
+#define ANCHOR_SIZE 1280
+
+// Point cloud generation code
+#pragma kernel point_cloud_generation
+
+struct intrinsic
+{
+    float depth_scaler;
+    float2 focal_length;
+    float2 principal_point;
+    float2 resolution;
+};
+
+struct extrinsic
+{
+    float4x4 camera_to_world;
+};
+
+Texture2D<float4> pcg_color_texture;
+Texture2D<float> pcg_depth_texture;
+
+StructuredBuffer<intrinsic> pcg_camera_intrinsics;
+StructuredBuffer<extrinsic> pcg_camera_to_world_matrix;
+RWStructuredBuffer<float2x3> pcg_result_point_cloud;
+
+[numthreads(32, 32, 1)]
+void point_cloud_generation(const uint3 id : SV_DispatchThreadID)
+{    
+    const intrinsic ins = pcg_camera_intrinsics[0];
+    const extrinsic ext = pcg_camera_to_world_matrix[0];
+
+    const float ds = ins.depth_scaler;
+
+    const float depth = pcg_depth_texture[id.xy].r * ds;
+    const float4 color = pcg_color_texture[id.xy];
+
+    const float2 rs = ins.resolution;
+    const float2 pp = ins.principal_point;
+    const float2 fl = ins.focal_length;
+    const float4x4 ctw = ext.camera_to_world;
+
+    float4 pos;
+
+    pos.x = -(id.x - pp.x) * depth / fl.x;
+    pos.y = -(id.y - pp.y) * depth / fl.y;
+    pos.z = -depth;
+    pos.w = 1;
+
+    pos = mul(ctw, pos);
+
+    // debugging rotation for matterport 3d
+    // const float4x4 r = float4x4(
+    //     1.0f, 0.0f, 0.0f, 0.0f,
+    //     0.0f, 0.0f, 1.0f, 0.0f,
+    //     0.0f, -1.0f, 0.0f, 0.0f,
+    //     0.0f, 0.0f, 0.0f, 1.0f
+    // );
+    // pos = mul(r, pos);
+
+    const int idx = (int)(id.y * rs.x + id.x);
+    pcg_result_point_cloud[idx][0] = pos.xyz;
+    pcg_result_point_cloud[idx][1] = color.rgb;
+}
+
+
+// Light Probe NN Search code
+#pragma kernel light_probe_nn_search
+#pragma kernel light_probe_nn_search_acc
+#pragma kernel light_probe_nn_reduce
+
+float3 lps_probe_position; // shared
+
+StructuredBuffer<float3> lps_anchors;
+// RWStructuredBuffer<float2x3> lpn_point_cloud; // shared
+RWStructuredBuffer<float2> lpn_result_buffer; // shared
+
+groupshared uint lps_idx[THREADS];
+groupshared float lps_cosines[THREADS];
+
+[numthreads(THREADS, 1, 1)]
+void light_probe_nn_search(const uint tid : SV_GroupThreadID, const uint gid : SV_GroupID)
+{
+    const uint point_idx = gid;
+    const uint anchor_idx = tid;
+
+    const float3 point_position = pcg_result_point_cloud[point_idx][0] - lps_probe_position;
+
+    uint i = 0;
+    uint r_idx = i * THREADS + anchor_idx;
+    const float point_length = length(point_position);
+
+    lps_cosines[anchor_idx] = 0;
+
+    // Compute angels for each anchor point and sphere point
+    while (r_idx < ANCHOR_SIZE)
+    {
+        const float3 anchor = lps_anchors[r_idx];
+
+        const float point_cosine = (point_position.x * anchor.x +
+            point_position.y * anchor.y + point_position.z * anchor.z) / point_length;
+
+        if (point_cosine > lps_cosines[anchor_idx])
+        {
+            lps_idx[anchor_idx] = r_idx;
+            lps_cosines[anchor_idx] = point_cosine;
+        }
+
+        r_idx = ++i * THREADS + anchor_idx;
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    i = THREADS / 2;
+
+    while (i != 0)
+    {
+        if (anchor_idx < i)
+        {
+            r_idx = anchor_idx + i;
+            if (lps_cosines[anchor_idx] < lps_cosines[r_idx])
+            {
+                lps_idx[anchor_idx] = lps_idx[r_idx];
+                lps_cosines[anchor_idx] = lps_cosines[r_idx];
+            }
+        }
+
+        GroupMemoryBarrierWithGroupSync();
+
+        i /= 2;
+    }
+
+    if (tid == 0)
+    {
+        lpn_result_buffer[point_idx].x = lps_idx[0];
+        lpn_result_buffer[point_idx].y = point_length;
+    }
+}
+
+
+static const int n_grid_v = 512;
+StructuredBuffer<uint> lpn_cache_grid;
+
+[numthreads(THREADS, 1, 1)]
+void light_probe_nn_search_acc(const uint tid : SV_DispatchThreadID)
+{
+    const float3 point_pos = pcg_result_point_cloud[tid][0] - lps_probe_position;
+
+    const float r = length(point_pos) + 0.000000000001;
+    const float phi = atan2(point_pos.y, point_pos.x);
+    const float theta = acos(point_pos.z / r);
+
+    const int cu = round(degrees(phi) % 360 / 360.0 * (n_grid_v * 2 - 1));
+    const int cv = round(degrees(theta) / 180.0 * (n_grid_v - 1));
+    const int c_idx = min(cv * (n_grid_v * 2) + cu, 512 * 1024 - 1);
+
+    lpn_result_buffer[tid].x = lpn_cache_grid[c_idx];
+    lpn_result_buffer[tid].y = r;
+}
+
+
+int lpr_num_points;
+groupshared int lpr_index[ANCHOR_SIZE];
+groupshared uint lpr_distance[ANCHOR_SIZE];
+
+RWStructuredBuffer<float4> lpr_result;
+
+[numthreads(THREADS, 1, 1)]
+void light_probe_nn_reduce(const uint tid : SV_GroupThreadID)
+{
+    int i = 0;
+    int r_idx = i * THREADS + tid;
+
+    while (r_idx < ANCHOR_SIZE)
+    {
+        lpr_distance[r_idx] = 10000000;
+        lpr_index[r_idx] = lpr_num_points;
+
+        lpr_result[r_idx].xyz = 0;
+        lpr_result[r_idx].w = 10000000;
+
+        r_idx = ++i * THREADS + tid;
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    i = 0;
+    r_idx = i * THREADS + tid;
+
+    // Here rIdx is actual point index
+    while (r_idx < lpr_num_points)
+    {
+        int anchor_idx = (int)lpn_result_buffer[r_idx].x;
+        const float point_distance = lpn_result_buffer[r_idx].y;
+
+        const uint distance_uint = (uint)(point_distance * 1000000);
+
+        // uint32 max value: 4294967295
+        InterlockedMin(lpr_distance[anchor_idx], distance_uint);
+
+        GroupMemoryBarrier();
+
+        if (lpr_distance[anchor_idx] == distance_uint)
+        {
+            lpr_index[anchor_idx] = r_idx;
+        }
+
+        r_idx = ++i * THREADS + tid;
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    i = 0;
+    r_idx = i * THREADS + tid;
+
+    while (r_idx < ANCHOR_SIZE)
+    {
+        const int idx = lpr_index[r_idx];
+
+        if (idx == lpr_num_points)
+        {
+            lpr_result[r_idx].xyzw = 0;
+        }
+        else
+        {
+            const float distance_float = (float)lpr_distance[r_idx] / 1000000.0;
+
+            if (distance_float < lpr_result[r_idx].w)
+            {
+                lpr_result[r_idx].xyz = pcg_result_point_cloud[idx][1];
+                lpr_result[r_idx].w = distance_float;
+            }
+        }
+
+        r_idx = ++i * THREADS + tid;
+    }
+}
+
+// MergeBuffers Kernel
+#pragma kernel merge_buffers
+
+StructuredBuffer<float4> mb_input_buffer;
+RWStructuredBuffer<float4> mb_base_buffer;
+
+[numthreads(32, 1, 1)]
+void merge_buffers(const uint tid : SV_DispatchThreadID)
+{
+    const float4 input = mb_input_buffer[tid];
+    const float input_sum = dot(input, input);
+    if (input_sum > 0) mb_base_buffer[tid] = input;
+}
+
+
+// MakeTriggerDecision Kernel
+#pragma kernel make_trigger_decision
+#define TRIGGER_THETA 0.7
+#define TRIGGER_NEIGHBORS 4
+
+StructuredBuffer<int> mtd_pooling_grid;
+StructuredBuffer<float4> mtd_input_buffer;
+StructuredBuffer<float4> mtd_base_buffer;
+
+RWStructuredBuffer<int> mtd_decision_buffer;
+
+[numthreads(32, 1, 1)]
+void make_trigger_decision(const uint id : SV_DispatchThreadID)
+{
+    if (mtd_decision_buffer[0] > 0) return;
+
+    float avg_cos_delta = 0;
+
+    for (int i = 0; i < TRIGGER_NEIGHBORS; i++)
+    {
+        const int n = mtd_pooling_grid[id * TRIGGER_NEIGHBORS + i];
+        float3 delta = mtd_base_buffer[n].rgb - mtd_input_buffer[n].rgb;
+        delta = delta * delta;
+        avg_cos_delta += (delta.x + delta.y + delta.z) / 3;
+    }
+
+    avg_cos_delta = avg_cos_delta / TRIGGER_NEIGHBORS;
+
+    InterlockedMax(mtd_decision_buffer[0], avg_cos_delta > TRIGGER_THETA);
+}
