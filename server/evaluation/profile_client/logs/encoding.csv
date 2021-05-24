@@ -1,0 +1,78 @@
+method,time
+float32 + stripping,1.793
+uint8 + float16,1.676
+uint8 + float16,1.675
+uint8 + float16 + stripping (ours),1.004
+uint8 + float16 + stripping (ours),1.003
+float32,0.004
+float32,0.002
+float32 + stripping,1.794
+float32 + stripping,1.792
+uint8 + float16,1.676
+uint8 + float16,1.674
+uint8 + float16 + stripping (ours),1.004
+uint8 + float16 + stripping (ours),1.002
+float32,0.005
+float32,0.002
+float32 + stripping,1.795
+float32 + stripping,1.792
+uint8 + float16,1.677
+uint8 + float16,1.674
+uint8 + float16 + stripping (ours),1.005
+uint8 + float16 + stripping (ours),1.002
+float32,0.005
+float32,0.002
+float32 + stripping,1.795
+float32 + stripping,1.792
+uint8 + float16,1.677
+uint8 + float16,1.674
+uint8 + float16 + stripping (ours),1.005
+uint8 + float16 + stripping (ours),1.002
+float32,0.003
+float32,-0.001
+float32 + stripping,1.793
+float32 + stripping,1.789
+uint8 + float16,1.675
+uint8 + float16,1.671
+uint8 + float16 + stripping (ours),1.003
+uint8 + float16 + stripping (ours),0.999
+float32,0.004
+float32,0.003
+float32 + stripping,1.794
+float32 + stripping,1.793
+uint8 + float16,1.676
+uint8 + float16,1.675
+uint8 + float16 + stripping (ours),1.004
+uint8 + float16 + stripping (ours),1.003
+float32,0.003
+float32,0.002
+float32 + stripping,1.793
+float32 + stripping,1.792
+uint8 + float16,1.675
+uint8 + float16,1.674
+uint8 + float16 + stripping (ours),1.003
+uint8 + float16 + stripping (ours),1.002
+float32,0.004
+float32,0.002
+float32 + stripping,1.794
+float32 + stripping,1.792
+uint8 + float16,1.676
+uint8 + float16,1.674
+uint8 + float16 + stripping (ours),1.004
+uint8 + float16 + stripping (ours),1.002
+float32,0.004
+float32,0.003
+float32 + stripping,1.794
+float32 + stripping,1.793
+uint8 + float16,1.676
+uint8 + float16,1.675
+uint8 + float16 + stripping (ours),1.004
+uint8 + float16 + stripping (ours),1.003
+float32,0.003
+float32,0.002
+float32 + stripping,1.793
+float32 + stripping,1.792
+uint8 + float16,1.675
+uint8 + float16,1.674
+uint8 + float16 + stripping (ours),1.003
+uint8 + float16 + stripping (ours),1.002

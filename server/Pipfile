@@ -1,0 +1,39 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pylint = "*"
+autopep8 = "*"
+rope = "*"
+
+[packages]
+urllib3 = ">=1.26.4"
+Pillow = ">=8.1.1"
+aiohttp = ">=3.7.4"
+pytorch-lightning = "*"
+imageio = "*"
+fire = "*"
+pyntcloud = "*"
+numba = "*"
+tqdm = "*"
+tornado = "*"
+coremltools = "*"
+scikit-learn = "*"
+ipykernel = "*"
+torchviz = "*"
+matplotlib = "*"
+pip = "*"
+opencv-python = "==4.2.0.34"
+pycuda = "*"
+seaborn = "*"
+ipywidgets = "*"
+h5py = "*"
+thop = "*"
+ptflops = "*"
+scikit-image = "*"
+autopep8 = "*"
+
+[requires]
+python_version = "3.8"

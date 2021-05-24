@@ -1,0 +1,1 @@
+POST http://localhost:8550/api/v2/lighting-estimation/
