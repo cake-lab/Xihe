@@ -1,4 +1,6 @@
-"""Configurations
+"""Project configurations
+
+Please specify dataset path in this file.
 """
 pointar_dataset_path = '/PATH/TO/PointAR'
 xihe_dataset_path = '/PATH/TO/Xihe'

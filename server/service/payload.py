@@ -1,3 +1,10 @@
+"""Payload processing
+
+These functions are designed to process correspoding HTTP
+request payloads identified by request header. Mostly built
+for testing and debugging convince.
+"""
+
 import numpy as np
 from datetime import datetime
 
