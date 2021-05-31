@@ -11,7 +11,7 @@ Omnidirectional lighting provides the foundation for achieving spatially-variant
 
 [Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality]().
 
-If you use the PointAR data or code, please cite:
+If you use the Xihe data or code, please cite:
 
 ```bibtex
 @InProceedings{xihe_mobisys2021,
