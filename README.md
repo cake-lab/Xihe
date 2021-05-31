@@ -1,4 +1,4 @@
-# Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality
+# Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality ([Project Page](https://tianguo.info/project/lighting-estimation/))
 
 [Yiqin Zhao](https://yiqinzhao.me), [Tian Guo](https://tianguo.info)
 
@@ -32,8 +32,8 @@ We provide detailed instructions for reproducing results in `README.md` files in
 
 ## Datasets
 
-One of the key steps in reproducing our work is to generate the transformed point cloud datasets. We have included the detailed dataset generation instructions in [`server/README.md`](./server/README.md). We are also available to provide generated test datasets, and AR session recording data for system testing upon request.
+One of the key steps in reproducing our work is to generate the transformed point cloud datasets. We have included the detailed dataset generation instructions in [`server/README.md`](./server/README.md#generating-training-dataset). We also provide generated test datasets, and AR session recording data for system testing upon requests. Please email [yzhao11@wpi.edu](mailto:yzhao11@wpi.edu) for requesting the data.
 
 ## Acknowledgement
 
-This work is supported in part by National Science Foundation grants #1755659 and #1815619.
+We thank all anonymous reviewers, our shepherd, and our artifact evaluator Tianxing Li for their insight feedback. This work was supported in part by NSF Grants #1755659 and #1815619.
