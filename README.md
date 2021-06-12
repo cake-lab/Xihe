@@ -1,8 +1,8 @@
-# Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality ([Project Page](https://tianguo.info/project/lighting-estimation/))
+# Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality
 
 [Yiqin Zhao](https://yiqinzhao.me), [Tian Guo](https://tianguo.info)
 
-This is the official code release for [Xihe]() which was published in MobiSys 2021.
+This is the official code release for [Xihe](https://github.com/cake-lab/Xihe/blob/main/xihe_mobisys21.pdf) which was published in MobiSys 2021.
 
 ## Overview
 **TL;DR:**
@@ -12,7 +12,7 @@ Omnidirectional lighting provides the foundation for achieving spatially-variant
 
 ## Paper
 
-[Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality]().
+[Xihe: A 3D Vision-based Lighting Estimation Framework for Mobile Augmented Reality](https://github.com/cake-lab/Xihe/blob/main/xihe_mobisys21.pdf).
 
 If you use the Xihe data or code, please cite:
 
